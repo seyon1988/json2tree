@@ -1,20 +1,19 @@
 package OUSL;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
+    private String condition;
     public static void main(String[] args) throws IOException {
-        System.out.println("\n-------------------------------------------------------\n\n");
         String filePath = "C:\\Users\\baums2\\Desktop\\js3.txt";
         String content = "";
 
         Main obj = new Main();
         content = obj.readFileAsString(filePath);
 
-        //System.out.println(content);
+
 
         List<Character> braces = new ArrayList<Character>();
         List<Integer> braceIndices = new ArrayList<Integer>();
@@ -63,44 +62,16 @@ public class Main {
         for(Character ch:braces){
             sb.append(ch);
         }
-        System.out.println(sb.toString());
 
-        for(Integer i:braceIndices){
-            System.out.print(i + " ");
-        }
-
-
-        System.out.println("\n\n-------------------------------------------------------\n\n");
-
-        System.out.println("\n\n");
-        for(int i=0;i<3;i++){
-            for(int j=0;j<p;j++){
-                System.out.print(braceIndicesDetails[i][j]+"\t");
-            }
-            System.out.println("");
-        }
-        System.out.println("\n\n-------------------------------------------------------\n\n");
-
-        for(int i=0;i<3;i++){
-            for(int j=0;j<p;j++){
-                if(braceIndicesDetails[2][j]==1)
-                System.out.print(braceIndicesDetails[i][j]+"\t");
-            }
-            System.out.println("");
-        }
-
-        System.out.println("\n\n-------------------------------------------------------\n\n");
-
-        int depth = 0,k=0;
+        int depth = 0,maxDepth=0, k=0;
         for(int j=0;j<p;j++){
             if(braceIndicesDetails[2][j]==1){
                 if(j==0){
-                    System.out.println("Depth "+depth+" = [ "+ braceIndicesDetails[0][j] + ", " + braceIndicesDetails[1][j] +" ]" );
                     braceIndicesDetails[3][j]=depth;
                 }else if(braceIndicesDetails[0][j]>braceIndicesDetails[0][j-1] && braceIndicesDetails[1][j]<braceIndicesDetails[1][j-1] ){
                     depth++;
                     braceIndicesDetails[3][j]=depth;
-                    System.out.println("Depth "+depth+" = [ "+ braceIndicesDetails[0][j] + ", " + braceIndicesDetails[1][j] +" ]" );
+                    if(depth>maxDepth) maxDepth=depth;
                 }else if(braceIndicesDetails[0][j]>braceIndicesDetails[0][j-1] && braceIndicesDetails[1][j]>braceIndicesDetails[1][j-1] ){
                     k = j;
                     while(braceIndicesDetails[0][j]>braceIndicesDetails[0][k-1] && braceIndicesDetails[1][j]>braceIndicesDetails[1][k-1] ){
@@ -108,10 +79,89 @@ public class Main {
                     }
                     depth = braceIndicesDetails[3][k];
                     braceIndicesDetails[3][j] = depth;
-                    System.out.println("Depth "+depth+" = [ "+ braceIndicesDetails[0][j] + ", " + braceIndicesDetails[1][j] +" ]" );
                 }
             }
         }
+        System.out.println("\n\n\n<<<--------------\n");
+
+        for(int i=0;i<4;i++){
+            for(int j=0;j<p;j++){
+                if(braceIndicesDetails[2][j]==1)
+                    System.out.print(braceIndicesDetails[i][j]+"\t\t");
+            }
+            System.out.println("");
+        }
+        System.out.println("\n-------------->>>\n");
+
+        String values[] = new String[p];
+        String value;
+        for(int j=0;j<p;j++) {
+            if (braceIndicesDetails[2][j] == 1) {
+                k = braceIndicesDetails[0][j];
+                while(content.charAt(k)!=':') k++;
+                int startIndex = k;
+                while(content.charAt(k)!=',') k++;
+                int endIndex = k;
+                value = content.substring(startIndex+1, endIndex).strip().replace("'","").replace("\"","");
+                values[j] = value;
+            }
+        }
+
+        Node root = new Node(0, values[0], null);
+        root.setCondition(values[0]);
+        Tree tree = new Tree(root);
+
+
+        int currentDepth =0;
+        Node currentParent = root;
+        int noOfChildren=0;
+        ArrayList<Node> children;
+
+        for(int i=1;i<p;i++){
+
+            Node n = new Node(braceIndicesDetails[3][i],values[i],currentParent);
+            int diff = braceIndicesDetails[3][i]-braceIndicesDetails[3][(i-1)];
+            if(diff==0){
+                currentParent.setChild(n);
+                n.setParent(currentParent);
+                n.setChildIndex();
+                n.setCondition(currentParent.getCondition() + " AND " + values[i]);
+                if(i+1<p && (braceIndicesDetails[3][i+1]-braceIndicesDetails[3][(i)])>0){
+                    currentParent = n;
+                }
+            }else if(diff==1){
+                currentParent.setChild(n);
+                n.setParent(currentParent);
+                n.setChildIndex();
+                n.setCondition(currentParent.getCondition() + " AND " + values[i]);
+                if(i+1<p && (braceIndicesDetails[3][i+1]-braceIndicesDetails[3][(i)])==0){
+                    //currentParent = currentParent;
+                }else{
+                    currentParent = n;
+                }
+
+            }else if(diff<0){
+                while(currentParent.getDepth()+1>braceIndicesDetails[3][i]) currentParent = currentParent.getParent();
+
+                currentParent.setChild(n);
+                n.setParent(currentParent);
+                n.setChildIndex();
+                n.setCondition(currentParent.getCondition() + " AND " + values[i]);
+                if(i+1<p && (braceIndicesDetails[3][i+1]-braceIndicesDetails[3][(i)])==0){
+                    //currentParent = currentParent;
+                }else if((i+1<p && (braceIndicesDetails[3][i+1]-braceIndicesDetails[3][(i)])==1)){
+                    currentParent = n;
+                }
+            }
+        }
+
+
+        obj.printLeaves(root);
+
+
+
+
+        //System.out.println("\n\n ==== "+root.getChildAt(3).getValue() + " Depth = "+ root.getChildAt(3).getDepth());
 
     }
 
@@ -129,7 +179,16 @@ public class Main {
         return fileData.toString();
     }
 
-
+    private void printLeaves(Node node){
+        ArrayList<Node> children = node.getChildren();
+        if(children.size()==0){
+            System.out.println(node.getCondition());
+        }else{
+            for (Node child:children) {
+                printLeaves(child);
+            }
+        }
+    }
 
 
 }
