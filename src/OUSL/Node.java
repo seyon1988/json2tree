@@ -84,7 +84,13 @@ public class Node {
     }
 
     public void setChildIndex() {
-        this.childIndex = this.getParent().getChildren().size() -1;
+        Node parent = this.getParent();
+        if(parent!=null){
+            this.childIndex = this.getParent().getChildren().size() -1;
+        }else{
+            this.childIndex =0;
+        }
+
     }
 
     public boolean isChildrenExists() {
